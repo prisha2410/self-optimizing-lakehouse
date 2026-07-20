@@ -19,3 +19,5 @@ python-dotenv==1.0.1
 # --- Utilities ---
 pandas==2.2.3
 boto3==1.35.0                  # S3-compatible client, works with MinIO
+
+openpyxl==3.1.5
