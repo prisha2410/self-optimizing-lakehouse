@@ -1,0 +1,21 @@
+# --- Lakehouse / Iceberg ---
+pyiceberg[s3fs,duckdb]==0.7.1
+duckdb==1.1.3
+
+# --- Backend API ---
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+
+# --- Multimodal ingestion (reuses your CV/NLP background) ---
+pypdf==5.0.1
+pillow==11.0.0
+sentence-transformers==3.2.1   # free, local embeddings — no API cost
+
+# --- Agent layer ---
+google-generativeai==0.8.3     # Gemini free tier
+python-dotenv==1.0.1
+
+# --- Utilities ---
+pandas==2.2.3
+boto3==1.35.0                  # S3-compatible client, works with MinIO

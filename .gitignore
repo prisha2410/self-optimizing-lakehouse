@@ -1,0 +1,21 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Node
+node_modules/
+dist/
+build/
+
+# OS
+.DS_Store
+
+# Data (don't commit large local data/warehouse files)
+data/warehouse/
+*.parquet
+
+# IDE
+.vscode/
+.idea/

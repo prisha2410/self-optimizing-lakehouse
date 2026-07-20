@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  # MinIO = free, local, S3-compatible storage.
+  # Stands in for Azure Blob Storage during development so we spend $0.
+  minio:
+    image: minio/minio:latest
+    container_name: lakehouse-minio
+    ports:
+      - "9000:9000"   # API port
+      - "9001:9001"   # Web console port
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  # Iceberg REST catalog: keeps track of table metadata/schema/snapshots.
+  iceberg-rest:
+    image: tabulario/iceberg-rest:latest
+    container_name: lakehouse-catalog
+    ports:
+      - "8181:8181"
+    environment:
+      CATALOG_WAREHOUSE: s3://warehouse/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: password123
+      AWS_REGION: us-east-1
+    depends_on:
+      - minio
+
+volumes:
+  minio_data:
