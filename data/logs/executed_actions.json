@@ -1,0 +1,12 @@
+[
+  {
+    "column": "vendor",
+    "transform": "IdentityTransform",
+    "issue_addressed": "High latency for filtered queries on the 'vendor' column due to full table scans"
+  },
+  {
+    "column": "order_date",
+    "transform": "MonthTransform",
+    "issue_addressed": "Inefficient data scanning for time-range queries on the 'order_date' column"
+  }
+]
