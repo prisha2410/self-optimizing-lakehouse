@@ -1,0 +1,162 @@
+[
+  {
+    "doc_id": "RCPT-1000",
+    "vendor": "TechZone Electronics",
+    "category": "Food & Dining",
+    "date": "2025-04-02",
+    "total": 1339.97,
+    "raw_text": "Receipt #1000\nVendor: TechZone Electronics\nDate: 2025-04-02\nItems: Coffee, Juice, Pasta\nTotal: Rs. 1339.97\n"
+  },
+  {
+    "doc_id": "RCPT-1001",
+    "vendor": "Urban Furnishings",
+    "category": "Groceries",
+    "date": "2025-04-21",
+    "total": 1031.71,
+    "raw_text": "Receipt #1001\nVendor: Urban Furnishings\nDate: 2025-04-21\nItems: Milk 1L, Bread, Cooking Oil\nTotal: Rs. 1031.71\n"
+  },
+  {
+    "doc_id": "RCPT-1002",
+    "vendor": "Fresh Mart",
+    "category": "Office Supplies",
+    "date": "2025-02-19",
+    "total": 1204.19,
+    "raw_text": "Receipt #1002\nVendor: Fresh Mart\nDate: 2025-02-19\nItems: Printer Paper, Sticky Notes, Notebook, Pen Pack\nTotal: Rs. 1204.19\n"
+  },
+  {
+    "doc_id": "RCPT-1003",
+    "vendor": "QuickPrint Stationery",
+    "category": "Food & Dining",
+    "date": "2025-04-16",
+    "total": 981.9,
+    "raw_text": "Receipt #1003\nVendor: QuickPrint Stationery\nDate: 2025-04-16\nItems: Sandwich, Coffee, Pasta, Salad\nTotal: Rs. 981.9\n"
+  },
+  {
+    "doc_id": "RCPT-1004",
+    "vendor": "Urban Furnishings",
+    "category": "Office Supplies",
+    "date": "2025-04-03",
+    "total": 1494.86,
+    "raw_text": "Receipt #1004\nVendor: Urban Furnishings\nDate: 2025-04-03\nItems: Sticky Notes, Printer Paper, Stapler\nTotal: Rs. 1494.86\n"
+  },
+  {
+    "doc_id": "RCPT-1005",
+    "vendor": "Cafe Bloom",
+    "category": "Office Supplies",
+    "date": "2025-06-05",
+    "total": 1553.23,
+    "raw_text": "Receipt #1005\nVendor: Cafe Bloom\nDate: 2025-06-05\nItems: Sticky Notes, Pen Pack, Printer Paper, Stapler\nTotal: Rs. 1553.23\n"
+  },
+  {
+    "doc_id": "RCPT-1006",
+    "vendor": "Urban Furnishings",
+    "category": "Furniture",
+    "date": "2025-08-19",
+    "total": 617.73,
+    "raw_text": "Receipt #1006\nVendor: Urban Furnishings\nDate: 2025-08-19\nItems: Office Chair, Bookshelf\nTotal: Rs. 617.73\n"
+  },
+  {
+    "doc_id": "RCPT-1007",
+    "vendor": "Fresh Mart",
+    "category": "Furniture",
+    "date": "2025-12-23",
+    "total": 671.53,
+    "raw_text": "Receipt #1007\nVendor: Fresh Mart\nDate: 2025-12-23\nItems: Bookshelf, Cushion\nTotal: Rs. 671.53\n"
+  },
+  {
+    "doc_id": "RCPT-1008",
+    "vendor": "QuickPrint Stationery",
+    "category": "Food & Dining",
+    "date": "2025-10-04",
+    "total": 2097.62,
+    "raw_text": "Receipt #1008\nVendor: QuickPrint Stationery\nDate: 2025-10-04\nItems: Salad, Pasta, Juice, Sandwich\nTotal: Rs. 2097.62\n"
+  },
+  {
+    "doc_id": "RCPT-1009",
+    "vendor": "Fresh Mart",
+    "category": "Furniture",
+    "date": "2025-08-03",
+    "total": 952.2,
+    "raw_text": "Receipt #1009\nVendor: Fresh Mart\nDate: 2025-08-03\nItems: Bookshelf, Study Table\nTotal: Rs. 952.2\n"
+  },
+  {
+    "doc_id": "RCPT-1010",
+    "vendor": "Urban Furnishings",
+    "category": "Electronics",
+    "date": "2025-07-12",
+    "total": 1621.26,
+    "raw_text": "Receipt #1010\nVendor: Urban Furnishings\nDate: 2025-07-12\nItems: Earphones, HDMI Cable, USB Cable\nTotal: Rs. 1621.26\n"
+  },
+  {
+    "doc_id": "RCPT-1011",
+    "vendor": "TechZone Electronics",
+    "category": "Furniture",
+    "date": "2025-01-16",
+    "total": 707.36,
+    "raw_text": "Receipt #1011\nVendor: TechZone Electronics\nDate: 2025-01-16\nItems: Office Chair, Study Table\nTotal: Rs. 707.36\n"
+  },
+  {
+    "doc_id": "RCPT-1012",
+    "vendor": "TechZone Electronics",
+    "category": "Office Supplies",
+    "date": "2025-03-23",
+    "total": 1165.91,
+    "raw_text": "Receipt #1012\nVendor: TechZone Electronics\nDate: 2025-03-23\nItems: Pen Pack, Notebook, Sticky Notes\nTotal: Rs. 1165.91\n"
+  },
+  {
+    "doc_id": "RCPT-1013",
+    "vendor": "QuickPrint Stationery",
+    "category": "Office Supplies",
+    "date": "2025-04-03",
+    "total": 1455.62,
+    "raw_text": "Receipt #1013\nVendor: QuickPrint Stationery\nDate: 2025-04-03\nItems: Notebook, Sticky Notes, Pen Pack, Stapler\nTotal: Rs. 1455.62\n"
+  },
+  {
+    "doc_id": "RCPT-1014",
+    "vendor": "Urban Furnishings",
+    "category": "Electronics",
+    "date": "2025-10-05",
+    "total": 627.33,
+    "raw_text": "Receipt #1014\nVendor: Urban Furnishings\nDate: 2025-10-05\nItems: USB Cable, HDMI Cable\nTotal: Rs. 627.33\n"
+  },
+  {
+    "doc_id": "RCPT-1015",
+    "vendor": "Fresh Mart",
+    "category": "Office Supplies",
+    "date": "2025-05-12",
+    "total": 1377.71,
+    "raw_text": "Receipt #1015\nVendor: Fresh Mart\nDate: 2025-05-12\nItems: Printer Paper, Notebook, Sticky Notes\nTotal: Rs. 1377.71\n"
+  },
+  {
+    "doc_id": "RCPT-1016",
+    "vendor": "Cafe Bloom",
+    "category": "Office Supplies",
+    "date": "2025-02-05",
+    "total": 1607.2,
+    "raw_text": "Receipt #1016\nVendor: Cafe Bloom\nDate: 2025-02-05\nItems: Notebook, Printer Paper, Stapler\nTotal: Rs. 1607.2\n"
+  },
+  {
+    "doc_id": "RCPT-1017",
+    "vendor": "Cafe Bloom",
+    "category": "Groceries",
+    "date": "2025-12-18",
+    "total": 1726.49,
+    "raw_text": "Receipt #1017\nVendor: Cafe Bloom\nDate: 2025-12-18\nItems: Eggs (12), Rice 5kg, Cooking Oil, Milk 1L\nTotal: Rs. 1726.49\n"
+  },
+  {
+    "doc_id": "RCPT-1018",
+    "vendor": "QuickPrint Stationery",
+    "category": "Groceries",
+    "date": "2025-09-18",
+    "total": 1129.26,
+    "raw_text": "Receipt #1018\nVendor: QuickPrint Stationery\nDate: 2025-09-18\nItems: Milk 1L, Eggs (12), Rice 5kg\nTotal: Rs. 1129.26\n"
+  },
+  {
+    "doc_id": "RCPT-1019",
+    "vendor": "Cafe Bloom",
+    "category": "Office Supplies",
+    "date": "2025-01-01",
+    "total": 1579.86,
+    "raw_text": "Receipt #1019\nVendor: Cafe Bloom\nDate: 2025-01-01\nItems: Stapler, Printer Paper, Notebook, Sticky Notes\nTotal: Rs. 1579.86\n"
+  }
+]
