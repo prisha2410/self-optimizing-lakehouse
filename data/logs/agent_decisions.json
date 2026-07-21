@@ -1,0 +1,16 @@
+[
+  {
+    "issue": "High latency for filtered queries on the 'vendor' column due to full table scans",
+    "evidence": "The query 'filter_by_vendor' scanned 1 file (the entire unpartitioned table) and took 24.322 seconds to return 725,296 rows (approx. 90% of total rows) when filtering on the 'vendor' column.",
+    "recommended_action": "REPARTITION_BY_COLUMN",
+    "target_column": "vendor",
+    "reasoning": "The table being unpartitioned and a single file forces a full file scan for every query, even with a filter. Partitioning by 'vendor' would allow Iceberg to efficiently prune data files based on the filter predicate, significantly reducing the amount of data scanned for vendor-specific queries. While 'United Kingdom' is a large part of the data, this will optimize queries for other vendors and improve overall data organization."
+  },
+  {
+    "issue": "Inefficient data scanning for time-range queries on the 'order_date' column",
+    "evidence": "The query 'filter_by_date_range' scanned 1 file (the entire unpartitioned table) to return 21,778 rows, even though it completed relatively quickly (0.178 seconds).",
+    "recommended_action": "REPARTITION_BY_COLUMN",
+    "target_column": "order_date",
+    "reasoning": "Although currently performing well, filtering by 'order_date' still involves scanning the entire single file's metadata and potentially many data blocks. Partitioning by a time dimension like 'order_date' (e.g., using a transform like 'month(order_date)' or 'year(order_date)') is a fundamental and highly effective optimization for time-series data in Iceberg, enabling efficient data skipping and reducing I/O for date-based range queries."
+  }
+]
