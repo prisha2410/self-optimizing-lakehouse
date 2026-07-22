@@ -9,6 +9,7 @@ import argparse
 import json
 from pyiceberg.catalog import load_catalog
 from pyiceberg.transforms import IdentityTransform, MonthTransform, BucketTransform
+from pyiceberg.table.sorting import NullOrder
 
 TABLE_NAME = "sales_db.sales"
 
@@ -29,8 +30,7 @@ def load_catalog_conn():
 
 def resolve_transform(table, column, decision):
     """Turns the agent's suggested_transform string into a real PyIceberg
-    transform + field name. Falls back to safe defaults if missing/invalid.
-    Returns (None, None, reason) if the transform is incompatible."""
+    transform + field name. Returns (None, None, reason) if incompatible."""
     suggestion = (decision.get("suggested_transform") or "").strip().lower()
 
     field = next((f for f in table.schema().fields if f.name == column), None)
@@ -160,27 +160,40 @@ def handle_compact_files(table, decision, dry_run, preview_log, executed_log):
 def handle_add_sort_order(table, decision, dry_run, preview_log, executed_log):
     column = decision["target_column"]
 
+    current_sort = table.sort_order()
+    existing_sort_columns = [f.source_id for f in current_sort.fields] if current_sort else []
+
+    field = next((f for f in table.schema().fields if f.name == column), None)
+    if field is None:
+        print(f"Column '{column}' not found in schema — skipping")
+        return
+
+    if field.field_id in existing_sort_columns:
+        print(f"Table is already sorted by '{column}' — skipping")
+        return
+
     if dry_run:
-        print(f"Would add sort order on '{column}' — NOTE: not executable, see limitation below")
+        print(f"Would add sort order on '{column}'")
         print(f"  -> Addresses issue: {decision['issue']}\n")
         preview_log.append({
             "action": "ADD_SORT_ORDER",
             "column": column,
             "issue_addressed": decision["issue"],
-            "note": "PyIceberg 0.7.1 does not support writing sort orders via the Python API "
-                    "(table.update_sort_order() doesn't exist in this version). Preview only.",
+            "note": "Sort order affects future writes/compactions, not existing files retroactively",
         })
         return
 
-    print(f"Skipping actual execution of ADD_SORT_ORDER on '{column}' — "
-          f"PyIceberg 0.7.1 has no write API for sort orders yet (read-only: "
-          f"table.sort_order()/sort_orders() exist, no update method).")
+    print(f"Executing: adding sort order on '{column}'...")
+    with table.update_sort_order() as update:
+        update.asc(column, IdentityTransform(), NullOrder.NULLS_LAST)
+
     executed_log.append({
         "action": "ADD_SORT_ORDER",
         "column": column,
         "issue_addressed": decision["issue"],
-        "note": "Not executed — unsupported in installed PyIceberg version (0.7.1)",
+        "note": "Applies to future writes/compactions — run compact_and_repartition.py to re-sort existing data",
     })
+    print(f"  -> Done. New sort order set on: {column}")
 
 ACTION_HANDLERS = {
     "REPARTITION_BY_COLUMN": handle_repartition,

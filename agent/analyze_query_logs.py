@@ -46,7 +46,6 @@ def get_file_stats(table_name):
     avg_file_size_mb = (files_df["file_size_in_bytes"].mean() / (1024 * 1024)) if total_files else 0
     small_file_count = int((files_df["file_size_in_bytes"] < 10 * 1024 * 1024).sum())
 
-    # Partition info isn't in inspect.files() — get it from an actual scan plan instead
     partition_stats = defaultdict(lambda: {"file_count": 0, "total_size": 0})
     plan_files = list(table.scan().plan_files())
 
@@ -64,7 +63,6 @@ def get_file_stats(table_name):
         for k, v in partition_stats.items()
     ]
 
-    # Rough cardinality estimate per column, to help the agent pick a sane transform
     df_sample = table.scan().to_pandas()
     cardinality = {
         col: int(df_sample[col].nunique())
@@ -87,16 +85,14 @@ file_stats_summary = json.dumps(file_stats, indent=2)
 
 # --- Known limitations the agent must respect (avoids recommending fixes that will fail) ---
 KNOWN_LIMITATIONS = """
-Known limitation 1: customer_id is stored as a double (not an integer) due to
+Known limitation: customer_id is stored as a double (not an integer) due to
 missing values during CSV ingestion, and Iceberg's bucket transform does not
 support double columns. Do not recommend REPARTITION_BY_COLUMN for customer_id
-until this is fixed at the ingestion layer.
-
-Known limitation 2: The installed PyIceberg version (0.7.1) does not support
-writing/updating sort orders via the Python API — only reading existing sort
-orders is possible. ADD_SORT_ORDER can still be recommended for visibility/
-documentation purposes, but note in the reasoning that it cannot currently be
-executed and will require a PyIceberg upgrade to apply.
+until this is fixed at the ingestion layer. If customer_id scan performance is
+an issue, recommend ADD_SORT_ORDER on customer_id instead — this is a fully
+supported, valid fix (not just a workaround), since sort order lets the query
+engine use file-level min/max statistics to skip files even without a
+partition on that column.
 """
 
 prompt = f"""You are a data engineering agent monitoring an Apache Iceberg table's health.
@@ -144,6 +140,9 @@ Action rules — follow these exactly:
 - target_column must never be null when recommended_action is REPARTITION_BY_COLUMN,
   REMOVE_PARTITION_FIELD, or ADD_SORT_ORDER.
 - suggested_transform should be null for any action other than REPARTITION_BY_COLUMN.
+- Do NOT recommend NO_ACTION_NEEDED for a genuine performance problem just because
+  the ideal fix (e.g. partitioning) is blocked — check whether a valid alternative
+  fix (e.g. ADD_SORT_ORDER) is available and recommend that instead.
 
 For each issue found, respond in this exact JSON format (a list, even if only one issue,
 empty list if genuinely no issues):

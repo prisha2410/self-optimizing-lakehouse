@@ -1,18 +1,18 @@
 [
   {
     "issue": "Severe small file sprawl across all partitions",
-    "evidence": "Total files: 546, Average file size: 0.01MB, Small file count: 546. The partition breakdown shows virtually every partition containing only 1 file with an average size of 0.0MB or 0.01MB.",
+    "evidence": "total_files: 546, avg_file_size_mb: 0.01, small_file_count: 546. This is observed in queries like 'filter_by_vendor' scanning 25 files for a single vendor, and 'filter_by_date_range' scanning 19 files for a single month, indicating high I/O overhead.",
     "recommended_action": "COMPACT_FILES",
     "target_column": null,
     "suggested_transform": null,
-    "reasoning": "The existence of 546 files with an average size of 0.01MB is highly inefficient for data processing, as it leads to excessive overhead in metadata management and I/O operations. Compacting these small files into larger ones within their existing partitions (defined by vendor and month) will significantly improve query performance by reducing file system interaction and improving scan efficiency, especially for queries like 'filter_by_vendor' which currently scan many small files."
+    "reasoning": "Consolidating small files into larger, more optimal file sizes within their existing partitions will significantly reduce metadata overhead, improve scan efficiency, and overall query performance by minimizing the number of file opens and reads."
   },
   {
-    "issue": "Inefficient scanning for frequently filtered column 'customer_id'",
-    "evidence": "Queries filtering by `customer_id` (e.g., 'filter_by_customer') return a small number of rows (2796) but consistently scan a large number of files (up to 25). The `customer_id` column has high cardinality (5881 unique values) and is not part of the current partition specification.",
+    "issue": "Inefficient filtering on customer_id due to lack of physical data organization for high-cardinality column",
+    "evidence": "The query 'filter_by_customer' scans 25 files to return only 2796 rows, taking 0.2-0.3 seconds. The column 'customer_id' (cardinality 5881) is not part of the current partition specification.",
     "recommended_action": "ADD_SORT_ORDER",
     "target_column": "customer_id",
     "suggested_transform": null,
-    "reasoning": "While partitioning by `customer_id` is currently not supported due to data type limitations, adding a sort order on `customer_id` will organize data within each partition. This allows Iceberg to use file-level statistics (min/max values) to skip entire data files or rows more effectively, improving the performance of queries filtering by `customer_id`. Note: This action requires a PyIceberg upgrade to version >0.7.1 to be applied, as writing/updating sort orders is not supported in the current version."
+    "reasoning": "Since 'customer_id' cannot be partitioned using 'bucket' transform (due to it being a double), adding a sort order will enable the query engine to leverage file-level min/max statistics for 'customer_id' to skip irrelevant data files. This improves file pruning and reduces the number of files scanned for customer-specific queries without incurring the overhead of over-partitioning."
   }
 ]

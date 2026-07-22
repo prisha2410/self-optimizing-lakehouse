@@ -7,7 +7,7 @@
   {
     "action": "ADD_SORT_ORDER",
     "column": "customer_id",
-    "issue_addressed": "Inefficient scanning for frequently filtered column 'customer_id'",
-    "note": "PyIceberg 0.7.1 does not support writing sort orders via the Python API (table.update_sort_order() doesn't exist in this version). Preview only."
+    "issue_addressed": "Inefficient filtering on customer_id due to lack of physical data organization for high-cardinality column",
+    "note": "Sort order affects future writes/compactions, not existing files retroactively"
   }
 ]

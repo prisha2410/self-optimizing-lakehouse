@@ -8,7 +8,7 @@
   {
     "action": "ADD_SORT_ORDER",
     "column": "customer_id",
-    "issue_addressed": "Inefficient scanning for frequently filtered column 'customer_id'",
-    "note": "Not executed \u2014 unsupported in installed PyIceberg version (0.7.1)"
+    "issue_addressed": "Inefficient filtering on customer_id due to lack of physical data organization for high-cardinality column",
+    "note": "Applies to future writes/compactions \u2014 run compact_and_repartition.py to re-sort existing data"
   }
 ]
