@@ -1,69 +1,245 @@
 """
-Reads the agent's saved decisions and actually executes them —
+Reads the agent's saved decisions and executes them —
 this is what makes the pipeline "self-optimizing" rather than
 just "self-reporting".
+
+Defaults to DRY RUN (preview only). Pass --execute to actually apply changes.
 """
+import argparse
 import json
 from pyiceberg.catalog import load_catalog
-from pyiceberg.transforms import IdentityTransform, MonthTransform
+from pyiceberg.transforms import IdentityTransform, MonthTransform, BucketTransform
 
-catalog = load_catalog(
-    "lakehouse",
-    **{
-        "uri": "http://localhost:8181",
-        "s3.endpoint": "http://localhost:9000",
-        "s3.access-key-id": "admin",
-        "s3.secret-access-key": "password123",
-        "s3.path-style-access": "true",
-        "downcast-ns-timestamp-to-us-on-write": "true",
-    },
-)
+TABLE_NAME = "sales_db.sales"
 
-table = catalog.load_table("sales_db.sales")
+COLUMN_REQUIRED_ACTIONS = {"REPARTITION_BY_COLUMN", "REMOVE_PARTITION_FIELD", "ADD_SORT_ORDER"}
 
-with open("data/logs/agent_decisions.json") as f:
-    decisions = json.load(f)
+def load_catalog_conn():
+    return load_catalog(
+        "lakehouse",
+        **{
+            "uri": "http://localhost:8181",
+            "s3.endpoint": "http://localhost:9000",
+            "s3.access-key-id": "admin",
+            "s3.secret-access-key": "password123",
+            "s3.path-style-access": "true",
+            "downcast-ns-timestamp-to-us-on-write": "true",
+        },
+    )
 
-print(f"Current partition spec: {table.spec()}\n")
+def resolve_transform(table, column, decision):
+    """Turns the agent's suggested_transform string into a real PyIceberg
+    transform + field name. Falls back to safe defaults if missing/invalid.
+    Returns (None, None, reason) if the transform is incompatible."""
+    suggestion = (decision.get("suggested_transform") or "").strip().lower()
 
-executed_log = []
+    field = next((f for f in table.schema().fields if f.name == column), None)
+    if field is None:
+        return None, None, f"column '{column}' not found in schema"
 
-for decision in decisions:
-    action = decision["recommended_action"]
+    source_type = str(field.field_type).lower()
+
+    if column == "order_date" or suggestion == "month":
+        return MonthTransform(), f"{column}_month", None
+
+    if suggestion.startswith("bucket:"):
+        try:
+            n = int(suggestion.split(":", 1)[1])
+        except (IndexError, ValueError):
+            n = 16
+
+        if source_type in ("double", "float"):
+            return None, None, (
+                f"column '{column}' is stored as {source_type}, but bucket transforms "
+                f"require an integer, string, or similar discrete type. This needs a "
+                f"schema/ingestion fix (cast {column} to a nullable integer type at "
+                f"ingestion), not a partitioning fix."
+            )
+        return BucketTransform(n), f"{column}_bucket_{n}", None
+
+    if suggestion == "identity":
+        return IdentityTransform(), f"{column}_partition", None
+
+    return None, None, f"no valid suggested_transform given for '{column}'"
+
+def handle_repartition(table, decision, dry_run, preview_log, executed_log):
     column = decision["target_column"]
+    transform, field_name, skip_reason = resolve_transform(table, column, decision)
 
-    if action != "REPARTITION_BY_COLUMN":
-        print(f"Skipping '{decision['issue']}' — action '{action}' not yet implemented")
-        continue
+    if transform is None:
+        print(f"Skipping '{decision['issue']}' — {skip_reason}")
+        return
 
-    # Choose transform: dates get bucketed by month, everything else is identity
-    if column == "order_date":
-        transform = MonthTransform()
-        field_name = "order_date_month"
-    else:
-        transform = IdentityTransform()
-        field_name = f"{column}_partition"
-
-    # Check it's not already partitioned by this column
     existing_fields = [f.name for f in table.spec().fields]
     if field_name in existing_fields:
         print(f"Already partitioned by {column} — skipping")
-        continue
+        return
+
+    if dry_run:
+        print(f"Would repartition by '{column}' using {transform.__class__.__name__}")
+        print(f"  -> New partition field would be: {field_name}")
+        print(f"  -> Addresses issue: {decision['issue']}\n")
+        preview_log.append({
+            "action": "REPARTITION_BY_COLUMN",
+            "column": column,
+            "transform": transform.__class__.__name__,
+            "new_field_name": field_name,
+            "issue_addressed": decision["issue"],
+        })
+        return
 
     print(f"Executing: repartitioning by '{column}' using {transform.__class__.__name__}...")
     with table.update_spec() as update:
         update.add_field(column, transform, field_name)
 
     executed_log.append({
+        "action": "REPARTITION_BY_COLUMN",
         "column": column,
         "transform": transform.__class__.__name__,
         "issue_addressed": decision["issue"],
     })
     print(f"  -> Done. New partition field: {field_name}")
 
-print(f"\nUpdated partition spec: {table.spec()}\n")
+def handle_remove_partition_field(table, decision, dry_run, preview_log, executed_log):
+    column = decision["target_column"]
+    existing_fields = [f.name for f in table.spec().fields]
 
-with open("data/logs/executed_actions.json", "w") as f:
-    json.dump(executed_log, f, indent=2)
+    candidates = [f for f in existing_fields if f.startswith(column)]
+    if not candidates:
+        print(f"No partition field found for '{column}' — skipping")
+        return
+    field_name = candidates[0]
 
-print(f"Executed {len(executed_log)} action(s). Logged to data/logs/executed_actions.json")
+    if dry_run:
+        print(f"Would remove over-granular partition field '{field_name}'")
+        print(f"  -> Addresses issue: {decision['issue']}\n")
+        preview_log.append({
+            "action": "REMOVE_PARTITION_FIELD",
+            "column": column,
+            "field_removed": field_name,
+            "issue_addressed": decision["issue"],
+        })
+        return
+
+    print(f"Executing: removing partition field '{field_name}'...")
+    with table.update_spec() as update:
+        update.remove_field(field_name)
+
+    executed_log.append({
+        "action": "REMOVE_PARTITION_FIELD",
+        "column": column,
+        "field_removed": field_name,
+        "issue_addressed": decision["issue"],
+    })
+    print(f"  -> Done. Removed partition field: {field_name}")
+
+def handle_compact_files(table, decision, dry_run, preview_log, executed_log):
+    if dry_run:
+        print("Would run file compaction (rewrite small files into larger ones)")
+        print(f"  -> Addresses issue: {decision['issue']}\n")
+        preview_log.append({
+            "action": "COMPACT_FILES",
+            "issue_addressed": decision["issue"],
+            "note": "Run with --execute to perform the actual rewrite",
+        })
+        return
+
+    from compact_and_repartition import compact_table  # same folder as this file
+
+    print("Executing: compacting and repartitioning table...")
+    summary = compact_table(TABLE_NAME)
+
+    executed_log.append({
+        "action": "COMPACT_FILES",
+        "issue_addressed": decision["issue"],
+        "rows_rewritten": summary["rows_rewritten"],
+        "file_count_after": summary["file_count_after"],
+    })
+    print(f"  -> Done. Rewrote {summary['rows_rewritten']} rows into {summary['file_count_after']} file(s).")
+
+def handle_add_sort_order(table, decision, dry_run, preview_log, executed_log):
+    column = decision["target_column"]
+
+    if dry_run:
+        print(f"Would add sort order on '{column}' — NOTE: not executable, see limitation below")
+        print(f"  -> Addresses issue: {decision['issue']}\n")
+        preview_log.append({
+            "action": "ADD_SORT_ORDER",
+            "column": column,
+            "issue_addressed": decision["issue"],
+            "note": "PyIceberg 0.7.1 does not support writing sort orders via the Python API "
+                    "(table.update_sort_order() doesn't exist in this version). Preview only.",
+        })
+        return
+
+    print(f"Skipping actual execution of ADD_SORT_ORDER on '{column}' — "
+          f"PyIceberg 0.7.1 has no write API for sort orders yet (read-only: "
+          f"table.sort_order()/sort_orders() exist, no update method).")
+    executed_log.append({
+        "action": "ADD_SORT_ORDER",
+        "column": column,
+        "issue_addressed": decision["issue"],
+        "note": "Not executed — unsupported in installed PyIceberg version (0.7.1)",
+    })
+
+ACTION_HANDLERS = {
+    "REPARTITION_BY_COLUMN": handle_repartition,
+    "REMOVE_PARTITION_FIELD": handle_remove_partition_field,
+    "COMPACT_FILES": handle_compact_files,
+    "ADD_SORT_ORDER": handle_add_sort_order,
+}
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--execute", action="store_true",
+        help="Actually apply the changes. Default is dry-run (preview only, no writes)."
+    )
+    args = parser.parse_args()
+    dry_run = not args.execute
+
+    catalog = load_catalog_conn()
+    table = catalog.load_table(TABLE_NAME)
+
+    with open("data/logs/agent_decisions.json") as f:
+        decisions = json.load(f)
+
+    print(f"Current partition spec: {table.spec()}\n")
+    if dry_run:
+        print("=== DRY RUN — no changes will be written. Pass --execute to apply. ===\n")
+
+    executed_log = []
+    preview_log = []
+
+    for decision in decisions:
+        action = decision["recommended_action"]
+
+        if action == "NO_ACTION_NEEDED":
+            print(f"No action needed for: {decision['issue']}")
+            continue
+
+        if action in COLUMN_REQUIRED_ACTIONS and not decision.get("target_column"):
+            print(f"Skipping '{decision['issue']}' — action '{action}' requires a target_column but none was given")
+            continue
+
+        handler = ACTION_HANDLERS.get(action)
+        if handler is None:
+            print(f"Skipping '{decision['issue']}' — action '{action}' not yet implemented")
+            continue
+
+        handler(table, decision, dry_run, preview_log, executed_log)
+
+    if dry_run:
+        print(f"\nSpec unchanged (dry run): {table.spec()}\n")
+        with open("data/logs/dry_run_preview.json", "w") as f:
+            json.dump(preview_log, f, indent=2)
+        print(f"Previewed {len(preview_log)} action(s). Details in data/logs/dry_run_preview.json")
+        print("Run again with --execute to apply these changes.")
+    else:
+        print(f"\nUpdated partition spec: {table.spec()}\n")
+        with open("data/logs/executed_actions.json", "w") as f:
+            json.dump(executed_log, f, indent=2)
+        print(f"Executed {len(executed_log)} action(s). Logged to data/logs/executed_actions.json")
+
+if __name__ == "__main__":
+    main()

@@ -2,13 +2,12 @@
   {
     "action": "COMPACT_FILES",
     "issue_addressed": "Severe small file sprawl across all partitions",
-    "rows_rewritten": 805620,
-    "file_count_after": 546
+    "note": "Run with --execute to perform the actual rewrite"
   },
   {
     "action": "ADD_SORT_ORDER",
     "column": "customer_id",
     "issue_addressed": "Inefficient scanning for frequently filtered column 'customer_id'",
-    "note": "Not executed \u2014 unsupported in installed PyIceberg version (0.7.1)"
+    "note": "PyIceberg 0.7.1 does not support writing sort orders via the Python API (table.update_sort_order() doesn't exist in this version). Preview only."
   }
 ]
